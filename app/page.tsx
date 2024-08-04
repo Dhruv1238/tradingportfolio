@@ -60,7 +60,7 @@ export default function Home() {
     if (accessToken) {
       setContextAccessToken(accessToken);
       setLoggedIn(true);
-      router.push('/stok');
+      router.push('/stoks');
     }
   }
     , [accessToken]);
