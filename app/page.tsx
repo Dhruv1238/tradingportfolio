@@ -3,9 +3,10 @@ import { Button } from "@nextui-org/react";
 import { UserContext } from "./userContext";
 import { useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import axios from "axios";
+
 
 export default function Home() {
-  const { accessToken, isLoggedIn } = useContext(UserContext);
   const [loading, setLoading] = useState(false);
 
   const router = useRouter();
@@ -15,12 +16,54 @@ export default function Home() {
     window.open(`https://developer.hdfcsec.com/oapi/v1/login?api_key=${process.env.NEXT_PUBLIC_API_KEY}`, '_blank');
   }
 
+  const [requestToken, setRequestToken] = useState<string | null>(null);
+
+  const { setAccessToken: setContextAccessToken, accessToken, setLoggedIn } = useContext(UserContext);
+
   useEffect(() => {
-    if (isLoggedIn) {
-      router.push('/stoks');
+    const query = new URLSearchParams(window.location.search);
+    const token = query.get('requestToken');
+    setRequestToken(token);
+  }, []);
+
+  const fetchAccessToken = async () => {
+    try {
+      const response = await axios.post(`https://developer.hdfcsec.com/oapi/v1/access-token`,
+        {
+          "apiSecret": process.env.NEXT_PUBLIC_API_SECRET
+        },
+        {
+          params: {
+            api_key: process.env.NEXT_PUBLIC_API_KEY,
+            request_token: requestToken
+          },
+          headers: {
+            'Content-Type': 'application/json'
+          },
+        });
+
+      setContextAccessToken(response.data.accessToken);
+      console.log('Access Token:', response.data.accessToken);
+    } catch (error) {
+      console.error('Error fetching access token:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (requestToken) {
+      console.log('Request Token:', requestToken);
+      fetchAccessToken();
+    }
+  }, [requestToken]);
+
+  useEffect(() => {
+    if (accessToken) {
+      setContextAccessToken(accessToken);
+      setLoggedIn(true);
+      router.push('/stok');
     }
   }
-    , [isLoggedIn]);
+    , [accessToken]);
 
   return (
     <>
